@@ -1,0 +1,86 @@
+@model List<ZavaStorefront.Models.CartItem>
+@{
+    ViewData["Title"] = "Shopping Cart";
+}
+
+<div class="container mt-4">
+    <h1 class="mb-4">Shopping Cart</h1>
+
+    @if (!Model.Any())
+    {
+        <div class="alert alert-info">
+            <h4>Your cart is empty</h4>
+            <p>Start shopping to add items to your cart.</p>
+            <a asp-controller="Home" asp-action="Index" class="btn btn-primary">Continue Shopping</a>
+        </div>
+    }
+    else
+    {
+        <div class="row">
+            <div class="col-md-8">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th>Price</th>
+                            <th>Quantity</th>
+                            <th>Subtotal</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model)
+                        {
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <img src="@item.Product.ImageUrl" class="cart-item-image me-3" alt="@item.Product.Name" onerror="this.src='https://via.placeholder.com/80x60?text=@Uri.EscapeDataString(item.Product.Name)'">
+                                        <div>
+                                            <h6 class="mb-0">@item.Product.Name</h6>
+                                            <small class="text-muted">@item.Product.Description</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>$@item.Product.Price.ToString("F2")</td>
+                                <td>
+                                    <form asp-controller="Cart" asp-action="UpdateQuantity" method="post" class="d-inline">
+                                        <input type="hidden" name="productId" value="@item.Product.Id" />
+                                        <input type="number" name="quantity" value="@item.Quantity" min="1" max="99" class="form-control form-control-sm" style="width: 70px;" onchange="this.form.submit()" />
+                                    </form>
+                                </td>
+                                <td>$@((item.Product.Price * item.Quantity).ToString("F2"))</td>
+                                <td>
+                                    <form asp-controller="Cart" asp-action="RemoveFromCart" method="post" class="d-inline">
+                                        <input type="hidden" name="productId" value="@item.Product.Id" />
+                                        <button type="submit" class="btn btn-sm btn-danger">Remove</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Order Summary</h5>
+                        <hr>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Items:</span>
+                            <span>@Model.Sum(i => i.Quantity)</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-3">
+                            <strong>Total:</strong>
+                            <strong>$@ViewBag.CartTotal.ToString("F2")</strong>
+                        </div>
+                        <form asp-controller="Cart" asp-action="Checkout" method="post">
+                            <button type="submit" class="btn btn-success w-100 mb-2">Checkout</button>
+                        </form>
+                        <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary w-100">Continue Shopping</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>

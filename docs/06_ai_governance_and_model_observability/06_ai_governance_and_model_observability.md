@@ -9,9 +9,9 @@ has_children: true
 
 ## Scenario
 
-Zava's AI service uses Azure AI Foundry workspace deployments for chat completions.
+Zava's AI service uses Azure AI Foundry workspace deployments for chat completions. Zava wants to operate responsibly at enterprise scale, and requires that the platform enforce security best practices, content safety and auditability. 
 
-To operate responsibly at enterprise scale, the platform must enforce:
+To ensure this, the platform must enforce:
 
 - Identity-only access
 - Content safety and guardrails

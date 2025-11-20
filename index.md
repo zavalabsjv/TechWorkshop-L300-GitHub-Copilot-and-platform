@@ -20,7 +20,7 @@ This lab has exercises on:
 * Monitoring and governing AI model usage with Azure Monitor and Application Insights
 * Resource cleanup
 
-The lab repository is available [here](https://github.com/microsoft/TechWorkshop-L300-GitHub-Copilot-and-platform).
+The lab is available as GitHub pages [here](https://microsoft.github.io/TechWorkshop-L300-AI-Apps-and-agents/){:target="_blank"}.
 
 ## Prerequisites
 

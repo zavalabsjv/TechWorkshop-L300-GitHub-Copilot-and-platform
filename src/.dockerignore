@@ -1,0 +1,31 @@
+# .dockerignore for ZavaStorefront
+
+# Directories
+**/bin/
+**/obj/
+**/out/
+**/logs/
+**/TestResults/
+**/.vs/
+**/.vscode/
+
+# Files
+**/*.user
+**/*.suo
+**/.DS_Store
+**/appsettings.Development.json
+**/.env
+**/.env.local
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Documentation
+README.md
+docs/
+*.md
+
+# Azure
+.azure/

@@ -106,6 +106,14 @@ secrets.json
 *.pem
 *.key
 
+# Azure deployment files with secrets/credentials
+GITHUB_SECRETS_SETUP.md
+DEPLOYMENT_FIXES.md
+logs.zip
+logs2.zip
+logs2/
+.azure/
+
 # Database
 *.db
 *.sqlite

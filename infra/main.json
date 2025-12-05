@@ -1,0 +1,978 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2018-05-01/subscriptionDeploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.38.33.27573",
+      "templateHash": "17581535129062343975"
+    }
+  },
+  "parameters": {
+    "environmentName": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "metadata": {
+        "description": "Name of the environment (e.g., dev, test, prod)"
+      }
+    },
+    "location": {
+      "type": "string",
+      "defaultValue": "westus3",
+      "minLength": 1,
+      "metadata": {
+        "description": "Primary location for all resources"
+      }
+    },
+    "resourceToken": {
+      "type": "string",
+      "defaultValue": "[uniqueString(subscription().id, parameters('environmentName'), parameters('location'))]",
+      "metadata": {
+        "description": "Unique suffix for resource naming"
+      }
+    },
+    "tags": {
+      "type": "object",
+      "defaultValue": {
+        "Environment": "[parameters('environmentName')]",
+        "Application": "ZavaStorefront",
+        "ManagedBy": "AzureDeveloperCLI"
+      },
+      "metadata": {
+        "description": "Tags to apply to all resources"
+      }
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Resources/resourceGroups",
+      "apiVersion": "2021-04-01",
+      "name": "[format('rg-zavastorefront-{0}-{1}', parameters('environmentName'), parameters('location'))]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]"
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "managed-identity-deployment",
+      "resourceGroup": "[format('rg-zavastorefront-{0}-{1}', parameters('environmentName'), parameters('location'))]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "name": {
+            "value": "[format('id-zavastorefront-{0}-{1}', parameters('environmentName'), parameters('location'))]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "tags": {
+            "value": "[parameters('tags')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.38.33.27573",
+              "templateHash": "13241047875861356961"
+            }
+          },
+          "parameters": {
+            "name": {
+              "type": "string",
+              "metadata": {
+                "description": "Name of the managed identity"
+              }
+            },
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "Location for the managed identity"
+              }
+            },
+            "tags": {
+              "type": "object",
+              "defaultValue": {},
+              "metadata": {
+                "description": "Tags to apply to the resource"
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.ManagedIdentity/userAssignedIdentities",
+              "apiVersion": "2023-01-31",
+              "name": "[parameters('name')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]"
+            }
+          ],
+          "outputs": {
+            "id": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('name'))]"
+            },
+            "principalId": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('name')), '2023-01-31').principalId]"
+            },
+            "clientId": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', parameters('name')), '2023-01-31').clientId]"
+            },
+            "name": {
+              "type": "string",
+              "value": "[parameters('name')]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[subscriptionResourceId('Microsoft.Resources/resourceGroups', format('rg-zavastorefront-{0}-{1}', parameters('environmentName'), parameters('location')))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "monitoring-deployment",
+      "resourceGroup": "[format('rg-zavastorefront-{0}-{1}', parameters('environmentName'), parameters('location'))]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "environmentName": {
+            "value": "[parameters('environmentName')]"
+          },
+          "tags": {
+            "value": "[parameters('tags')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.38.33.27573",
+              "templateHash": "249664086474865732"
+            }
+          },
+          "parameters": {
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "Location for monitoring resources"
+              }
+            },
+            "environmentName": {
+              "type": "string",
+              "metadata": {
+                "description": "Environment name for naming"
+              }
+            },
+            "tags": {
+              "type": "object",
+              "defaultValue": {},
+              "metadata": {
+                "description": "Tags to apply to resources"
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.OperationalInsights/workspaces",
+              "apiVersion": "2022-10-01",
+              "name": "[format('law-zavastorefront-{0}-{1}', parameters('environmentName'), parameters('location'))]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "properties": {
+                "sku": {
+                  "name": "PerGB2018"
+                },
+                "retentionInDays": 30,
+                "features": {
+                  "enableLogAccessUsingOnlyResourcePermissions": true
+                },
+                "workspaceCapping": {
+                  "dailyQuotaGb": 1
+                },
+                "publicNetworkAccessForIngestion": "Enabled",
+                "publicNetworkAccessForQuery": "Enabled"
+              }
+            },
+            {
+              "type": "Microsoft.Insights/components",
+              "apiVersion": "2020-02-02",
+              "name": "[format('appi-zavastorefront-{0}-{1}', parameters('environmentName'), parameters('location'))]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "kind": "web",
+              "properties": {
+                "Application_Type": "web",
+                "WorkspaceResourceId": "[resourceId('Microsoft.OperationalInsights/workspaces', format('law-zavastorefront-{0}-{1}', parameters('environmentName'), parameters('location')))]",
+                "IngestionMode": "LogAnalytics",
+                "publicNetworkAccessForIngestion": "Enabled",
+                "publicNetworkAccessForQuery": "Enabled"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.OperationalInsights/workspaces', format('law-zavastorefront-{0}-{1}', parameters('environmentName'), parameters('location')))]"
+              ]
+            }
+          ],
+          "outputs": {
+            "logAnalyticsWorkspaceId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.OperationalInsights/workspaces', format('law-zavastorefront-{0}-{1}', parameters('environmentName'), parameters('location')))]"
+            },
+            "logAnalyticsWorkspaceName": {
+              "type": "string",
+              "value": "[format('law-zavastorefront-{0}-{1}', parameters('environmentName'), parameters('location'))]"
+            },
+            "applicationInsightsId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Insights/components', format('appi-zavastorefront-{0}-{1}', parameters('environmentName'), parameters('location')))]"
+            },
+            "applicationInsightsName": {
+              "type": "string",
+              "value": "[format('appi-zavastorefront-{0}-{1}', parameters('environmentName'), parameters('location'))]"
+            },
+            "applicationInsightsInstrumentationKey": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Insights/components', format('appi-zavastorefront-{0}-{1}', parameters('environmentName'), parameters('location'))), '2020-02-02').InstrumentationKey]"
+            },
+            "applicationInsightsConnectionString": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Insights/components', format('appi-zavastorefront-{0}-{1}', parameters('environmentName'), parameters('location'))), '2020-02-02').ConnectionString]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[subscriptionResourceId('Microsoft.Resources/resourceGroups', format('rg-zavastorefront-{0}-{1}', parameters('environmentName'), parameters('location')))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "container-registry-deployment",
+      "resourceGroup": "[format('rg-zavastorefront-{0}-{1}', parameters('environmentName'), parameters('location'))]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "name": {
+            "value": "[format('acrzavastore{0}', parameters('resourceToken'))]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "managedIdentityPrincipalId": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('rg-zavastorefront-{0}-{1}', parameters('environmentName'), parameters('location'))), 'Microsoft.Resources/deployments', 'managed-identity-deployment'), '2025-04-01').outputs.principalId.value]"
+          },
+          "tags": {
+            "value": "[parameters('tags')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.38.33.27573",
+              "templateHash": "612684608049591897"
+            }
+          },
+          "parameters": {
+            "name": {
+              "type": "string",
+              "metadata": {
+                "description": "Name of the container registry (must be globally unique, alphanumeric only)"
+              }
+            },
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "Location for the container registry"
+              }
+            },
+            "managedIdentityPrincipalId": {
+              "type": "string",
+              "metadata": {
+                "description": "Principal ID of the managed identity to grant AcrPull role"
+              }
+            },
+            "tags": {
+              "type": "object",
+              "defaultValue": {},
+              "metadata": {
+                "description": "Tags to apply to the resource"
+              }
+            },
+            "sku": {
+              "type": "string",
+              "defaultValue": "Basic",
+              "allowedValues": [
+                "Basic",
+                "Standard",
+                "Premium"
+              ],
+              "metadata": {
+                "description": "SKU for the container registry"
+              }
+            }
+          },
+          "variables": {
+            "acrPullRoleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '7f951dda-4ed3-4680-a7ca-43fe172d538d')]"
+          },
+          "resources": [
+            {
+              "type": "Microsoft.ContainerRegistry/registries",
+              "apiVersion": "2023-07-01",
+              "name": "[parameters('name')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "sku": {
+                "name": "[parameters('sku')]"
+              },
+              "properties": {
+                "adminUserEnabled": false,
+                "publicNetworkAccess": "Enabled",
+                "zoneRedundancy": "Disabled"
+              }
+            },
+            {
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2022-04-01",
+              "scope": "[format('Microsoft.ContainerRegistry/registries/{0}', parameters('name'))]",
+              "name": "[guid(resourceId('Microsoft.ContainerRegistry/registries', parameters('name')), parameters('managedIdentityPrincipalId'), variables('acrPullRoleDefinitionId'))]",
+              "properties": {
+                "roleDefinitionId": "[variables('acrPullRoleDefinitionId')]",
+                "principalId": "[parameters('managedIdentityPrincipalId')]",
+                "principalType": "ServicePrincipal"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.ContainerRegistry/registries', parameters('name'))]"
+              ]
+            }
+          ],
+          "outputs": {
+            "id": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.ContainerRegistry/registries', parameters('name'))]"
+            },
+            "name": {
+              "type": "string",
+              "value": "[parameters('name')]"
+            },
+            "loginServer": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.ContainerRegistry/registries', parameters('name')), '2023-07-01').loginServer]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('rg-zavastorefront-{0}-{1}', parameters('environmentName'), parameters('location'))), 'Microsoft.Resources/deployments', 'managed-identity-deployment')]",
+        "[subscriptionResourceId('Microsoft.Resources/resourceGroups', format('rg-zavastorefront-{0}-{1}', parameters('environmentName'), parameters('location')))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "ai-foundry-deployment",
+      "resourceGroup": "[format('rg-zavastorefront-{0}-{1}', parameters('environmentName'), parameters('location'))]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "name": {
+            "value": "[format('aif-zavastorefront-{0}-{1}', parameters('environmentName'), parameters('location'))]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "tags": {
+            "value": "[parameters('tags')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.38.33.27573",
+              "templateHash": "4335300418942270245"
+            }
+          },
+          "parameters": {
+            "name": {
+              "type": "string",
+              "metadata": {
+                "description": "Name of the AI Foundry workspace"
+              }
+            },
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "Location for the AI Foundry workspace"
+              }
+            },
+            "tags": {
+              "type": "object",
+              "defaultValue": {},
+              "metadata": {
+                "description": "Tags to apply to the resource"
+              }
+            },
+            "storageAccountName": {
+              "type": "string",
+              "defaultValue": "[format('staif{0}', uniqueString(resourceGroup().id))]",
+              "metadata": {
+                "description": "Storage account name for AI Foundry"
+              }
+            },
+            "keyVaultName": {
+              "type": "string",
+              "defaultValue": "[format('kv-aif-{0}', uniqueString(resourceGroup().id))]",
+              "metadata": {
+                "description": "Key Vault name for AI Foundry"
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.MachineLearningServices/workspaces/workspaces",
+              "apiVersion": "2024-04-01",
+              "name": "[format('{0}/{1}', parameters('name'), format('{0}-project', parameters('name')))]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "kind": "Project",
+              "identity": {
+                "type": "SystemAssigned"
+              },
+              "properties": {
+                "friendlyName": "[format('{0} Project', parameters('name'))]",
+                "hubResourceId": "[resourceId('Microsoft.MachineLearningServices/workspaces', parameters('name'))]",
+                "publicNetworkAccess": "Enabled"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.MachineLearningServices/workspaces', parameters('name'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Storage/storageAccounts",
+              "apiVersion": "2023-01-01",
+              "name": "[parameters('storageAccountName')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "sku": {
+                "name": "Standard_LRS"
+              },
+              "kind": "StorageV2",
+              "properties": {
+                "accessTier": "Hot",
+                "allowBlobPublicAccess": false,
+                "minimumTlsVersion": "TLS1_2",
+                "supportsHttpsTrafficOnly": true
+              }
+            },
+            {
+              "type": "Microsoft.KeyVault/vaults",
+              "apiVersion": "2023-07-01",
+              "name": "[parameters('keyVaultName')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "properties": {
+                "sku": {
+                  "family": "A",
+                  "name": "standard"
+                },
+                "tenantId": "[subscription().tenantId]",
+                "enableRbacAuthorization": true,
+                "enableSoftDelete": true,
+                "softDeleteRetentionInDays": 7,
+                "publicNetworkAccess": "Enabled"
+              }
+            },
+            {
+              "type": "Microsoft.CognitiveServices/accounts",
+              "apiVersion": "2023-05-01",
+              "name": "[format('ais-{0}', parameters('name'))]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "kind": "AIServices",
+              "sku": {
+                "name": "S0"
+              },
+              "properties": {
+                "customSubDomainName": "[format('ais-{0}', uniqueString(resourceGroup().id))]",
+                "publicNetworkAccess": "Enabled",
+                "networkAcls": {
+                  "defaultAction": "Allow"
+                }
+              }
+            },
+            {
+              "type": "Microsoft.MachineLearningServices/workspaces",
+              "apiVersion": "2024-04-01",
+              "name": "[parameters('name')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "kind": "Hub",
+              "identity": {
+                "type": "SystemAssigned"
+              },
+              "properties": {
+                "friendlyName": "[parameters('name')]",
+                "storageAccount": "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]",
+                "keyVault": "[resourceId('Microsoft.KeyVault/vaults', parameters('keyVaultName'))]",
+                "publicNetworkAccess": "Enabled",
+                "v1LegacyMode": false
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.KeyVault/vaults', parameters('keyVaultName'))]",
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.MachineLearningServices/workspaces/connections",
+              "apiVersion": "2024-04-01",
+              "name": "[format('{0}/{1}', parameters('name'), 'aiservices-connection')]",
+              "properties": {
+                "category": "AIServices",
+                "target": "[reference(resourceId('Microsoft.CognitiveServices/accounts', format('ais-{0}', parameters('name'))), '2023-05-01').endpoint]",
+                "authType": "ApiKey",
+                "isSharedToAll": true,
+                "credentials": {
+                  "key": "[listKeys(resourceId('Microsoft.CognitiveServices/accounts', format('ais-{0}', parameters('name'))), '2023-05-01').key1]"
+                },
+                "metadata": {
+                  "ApiType": "Azure",
+                  "ResourceId": "[resourceId('Microsoft.CognitiveServices/accounts', format('ais-{0}', parameters('name')))]"
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.MachineLearningServices/workspaces', parameters('name'))]",
+                "[resourceId('Microsoft.CognitiveServices/accounts', format('ais-{0}', parameters('name')))]"
+              ]
+            }
+          ],
+          "outputs": {
+            "id": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.MachineLearningServices/workspaces', parameters('name'))]"
+            },
+            "name": {
+              "type": "string",
+              "value": "[parameters('name')]"
+            },
+            "endpoint": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.CognitiveServices/accounts', format('ais-{0}', parameters('name'))), '2023-05-01').endpoint]"
+            },
+            "projectId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.MachineLearningServices/workspaces/workspaces', parameters('name'), format('{0}-project', parameters('name')))]"
+            },
+            "projectName": {
+              "type": "string",
+              "value": "[format('{0}-project', parameters('name'))]"
+            },
+            "aiServicesEndpoint": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.CognitiveServices/accounts', format('ais-{0}', parameters('name'))), '2023-05-01').endpoint]"
+            },
+            "aiServicesKey": {
+              "type": "string",
+              "value": "[listKeys(resourceId('Microsoft.CognitiveServices/accounts', format('ais-{0}', parameters('name'))), '2023-05-01').key1]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[subscriptionResourceId('Microsoft.Resources/resourceGroups', format('rg-zavastorefront-{0}-{1}', parameters('environmentName'), parameters('location')))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "app-service-plan-deployment",
+      "resourceGroup": "[format('rg-zavastorefront-{0}-{1}', parameters('environmentName'), parameters('location'))]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "name": {
+            "value": "[format('asp-zavastorefront-{0}-{1}', parameters('environmentName'), parameters('location'))]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "tags": {
+            "value": "[parameters('tags')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.38.33.27573",
+              "templateHash": "13455537372717330318"
+            }
+          },
+          "parameters": {
+            "name": {
+              "type": "string",
+              "metadata": {
+                "description": "Name of the App Service Plan"
+              }
+            },
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "Location for the App Service Plan"
+              }
+            },
+            "tags": {
+              "type": "object",
+              "defaultValue": {},
+              "metadata": {
+                "description": "Tags to apply to the resource"
+              }
+            },
+            "sku": {
+              "type": "string",
+              "defaultValue": "B1",
+              "allowedValues": [
+                "B1",
+                "B2",
+                "B3",
+                "S1",
+                "S2",
+                "S3",
+                "P1v2",
+                "P2v2",
+                "P3v2"
+              ],
+              "metadata": {
+                "description": "SKU for the App Service Plan"
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Web/serverfarms",
+              "apiVersion": "2023-01-01",
+              "name": "[parameters('name')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "sku": {
+                "name": "[parameters('sku')]"
+              },
+              "kind": "linux",
+              "properties": {
+                "reserved": true,
+                "zoneRedundant": false
+              }
+            }
+          ],
+          "outputs": {
+            "id": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Web/serverfarms', parameters('name'))]"
+            },
+            "name": {
+              "type": "string",
+              "value": "[parameters('name')]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[subscriptionResourceId('Microsoft.Resources/resourceGroups', format('rg-zavastorefront-{0}-{1}', parameters('environmentName'), parameters('location')))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "web-app-deployment",
+      "resourceGroup": "[format('rg-zavastorefront-{0}-{1}', parameters('environmentName'), parameters('location'))]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "name": {
+            "value": "[format('app-zavastorefront-{0}-{1}', parameters('environmentName'), parameters('location'))]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "appServicePlanId": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('rg-zavastorefront-{0}-{1}', parameters('environmentName'), parameters('location'))), 'Microsoft.Resources/deployments', 'app-service-plan-deployment'), '2025-04-01').outputs.id.value]"
+          },
+          "managedIdentityId": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('rg-zavastorefront-{0}-{1}', parameters('environmentName'), parameters('location'))), 'Microsoft.Resources/deployments', 'managed-identity-deployment'), '2025-04-01').outputs.id.value]"
+          },
+          "containerRegistryLoginServer": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('rg-zavastorefront-{0}-{1}', parameters('environmentName'), parameters('location'))), 'Microsoft.Resources/deployments', 'container-registry-deployment'), '2025-04-01').outputs.loginServer.value]"
+          },
+          "applicationInsightsConnectionString": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('rg-zavastorefront-{0}-{1}', parameters('environmentName'), parameters('location'))), 'Microsoft.Resources/deployments', 'monitoring-deployment'), '2025-04-01').outputs.applicationInsightsConnectionString.value]"
+          },
+          "applicationInsightsInstrumentationKey": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('rg-zavastorefront-{0}-{1}', parameters('environmentName'), parameters('location'))), 'Microsoft.Resources/deployments', 'monitoring-deployment'), '2025-04-01').outputs.applicationInsightsInstrumentationKey.value]"
+          },
+          "aiFoundryEndpoint": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('rg-zavastorefront-{0}-{1}', parameters('environmentName'), parameters('location'))), 'Microsoft.Resources/deployments', 'ai-foundry-deployment'), '2025-04-01').outputs.endpoint.value]"
+          },
+          "aiFoundryProjectId": {
+            "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('rg-zavastorefront-{0}-{1}', parameters('environmentName'), parameters('location'))), 'Microsoft.Resources/deployments', 'ai-foundry-deployment'), '2025-04-01').outputs.projectId.value]"
+          },
+          "tags": {
+            "value": "[parameters('tags')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.38.33.27573",
+              "templateHash": "16975392663499347820"
+            }
+          },
+          "parameters": {
+            "name": {
+              "type": "string",
+              "metadata": {
+                "description": "Name of the Web App"
+              }
+            },
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "Location for the Web App"
+              }
+            },
+            "appServicePlanId": {
+              "type": "string",
+              "metadata": {
+                "description": "App Service Plan ID"
+              }
+            },
+            "managedIdentityId": {
+              "type": "string",
+              "metadata": {
+                "description": "Managed Identity resource ID"
+              }
+            },
+            "containerRegistryLoginServer": {
+              "type": "string",
+              "metadata": {
+                "description": "Container Registry login server"
+              }
+            },
+            "applicationInsightsConnectionString": {
+              "type": "securestring",
+              "metadata": {
+                "description": "Application Insights connection string"
+              }
+            },
+            "applicationInsightsInstrumentationKey": {
+              "type": "securestring",
+              "metadata": {
+                "description": "Application Insights instrumentation key"
+              }
+            },
+            "aiFoundryEndpoint": {
+              "type": "string",
+              "metadata": {
+                "description": "AI Foundry endpoint"
+              }
+            },
+            "aiFoundryProjectId": {
+              "type": "string",
+              "metadata": {
+                "description": "AI Foundry project ID"
+              }
+            },
+            "tags": {
+              "type": "object",
+              "defaultValue": {},
+              "metadata": {
+                "description": "Tags to apply to the resource"
+              }
+            },
+            "dockerImageName": {
+              "type": "string",
+              "defaultValue": "mcr.microsoft.com/appsvc/staticsite:latest",
+              "metadata": {
+                "description": "Docker image name"
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Web/sites",
+              "apiVersion": "2023-01-01",
+              "name": "[parameters('name')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "kind": "app,linux,container",
+              "identity": {
+                "type": "UserAssigned",
+                "userAssignedIdentities": {
+                  "[format('{0}', parameters('managedIdentityId'))]": {}
+                }
+              },
+              "properties": {
+                "serverFarmId": "[parameters('appServicePlanId')]",
+                "httpsOnly": true,
+                "clientAffinityEnabled": false,
+                "siteConfig": {
+                  "linuxFxVersion": "[format('DOCKER|{0}', parameters('dockerImageName'))]",
+                  "alwaysOn": true,
+                  "ftpsState": "Disabled",
+                  "minTlsVersion": "1.2",
+                  "http20Enabled": true,
+                  "acrUseManagedIdentityCreds": true,
+                  "acrUserManagedIdentityID": "[split(parameters('managedIdentityId'), '/')[8]]",
+                  "appSettings": [
+                    {
+                      "name": "DOCKER_REGISTRY_SERVER_URL",
+                      "value": "[format('https://{0}', parameters('containerRegistryLoginServer'))]"
+                    },
+                    {
+                      "name": "DOCKER_ENABLE_CI",
+                      "value": "true"
+                    },
+                    {
+                      "name": "WEBSITES_ENABLE_APP_SERVICE_STORAGE",
+                      "value": "false"
+                    },
+                    {
+                      "name": "APPLICATIONINSIGHTS_CONNECTION_STRING",
+                      "value": "[parameters('applicationInsightsConnectionString')]"
+                    },
+                    {
+                      "name": "ApplicationInsightsAgent_EXTENSION_VERSION",
+                      "value": "~3"
+                    },
+                    {
+                      "name": "XDT_MicrosoftApplicationInsights_Mode",
+                      "value": "recommended"
+                    },
+                    {
+                      "name": "APPINSIGHTS_INSTRUMENTATIONKEY",
+                      "value": "[parameters('applicationInsightsInstrumentationKey')]"
+                    },
+                    {
+                      "name": "AI_FOUNDRY_ENDPOINT",
+                      "value": "[parameters('aiFoundryEndpoint')]"
+                    },
+                    {
+                      "name": "AI_FOUNDRY_PROJECT_ID",
+                      "value": "[parameters('aiFoundryProjectId')]"
+                    },
+                    {
+                      "name": "ASPNETCORE_ENVIRONMENT",
+                      "value": "Development"
+                    }
+                  ]
+                }
+              }
+            }
+          ],
+          "outputs": {
+            "id": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Web/sites', parameters('name'))]"
+            },
+            "name": {
+              "type": "string",
+              "value": "[parameters('name')]"
+            },
+            "url": {
+              "type": "string",
+              "value": "[format('https://{0}', reference(resourceId('Microsoft.Web/sites', parameters('name')), '2023-01-01').defaultHostName)]"
+            },
+            "defaultHostName": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Web/sites', parameters('name')), '2023-01-01').defaultHostName]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('rg-zavastorefront-{0}-{1}', parameters('environmentName'), parameters('location'))), 'Microsoft.Resources/deployments', 'ai-foundry-deployment')]",
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('rg-zavastorefront-{0}-{1}', parameters('environmentName'), parameters('location'))), 'Microsoft.Resources/deployments', 'app-service-plan-deployment')]",
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('rg-zavastorefront-{0}-{1}', parameters('environmentName'), parameters('location'))), 'Microsoft.Resources/deployments', 'container-registry-deployment')]",
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('rg-zavastorefront-{0}-{1}', parameters('environmentName'), parameters('location'))), 'Microsoft.Resources/deployments', 'managed-identity-deployment')]",
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('rg-zavastorefront-{0}-{1}', parameters('environmentName'), parameters('location'))), 'Microsoft.Resources/deployments', 'monitoring-deployment')]",
+        "[subscriptionResourceId('Microsoft.Resources/resourceGroups', format('rg-zavastorefront-{0}-{1}', parameters('environmentName'), parameters('location')))]"
+      ]
+    }
+  ],
+  "outputs": {
+    "RESOURCE_GROUP_NAME": {
+      "type": "string",
+      "value": "[format('rg-zavastorefront-{0}-{1}', parameters('environmentName'), parameters('location'))]"
+    },
+    "AZURE_CONTAINER_REGISTRY_ENDPOINT": {
+      "type": "string",
+      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('rg-zavastorefront-{0}-{1}', parameters('environmentName'), parameters('location'))), 'Microsoft.Resources/deployments', 'container-registry-deployment'), '2025-04-01').outputs.loginServer.value]"
+    },
+    "AZURE_CONTAINER_REGISTRY_NAME": {
+      "type": "string",
+      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('rg-zavastorefront-{0}-{1}', parameters('environmentName'), parameters('location'))), 'Microsoft.Resources/deployments', 'container-registry-deployment'), '2025-04-01').outputs.name.value]"
+    },
+    "WEB_APP_NAME": {
+      "type": "string",
+      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('rg-zavastorefront-{0}-{1}', parameters('environmentName'), parameters('location'))), 'Microsoft.Resources/deployments', 'web-app-deployment'), '2025-04-01').outputs.name.value]"
+    },
+    "WEB_APP_URL": {
+      "type": "string",
+      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('rg-zavastorefront-{0}-{1}', parameters('environmentName'), parameters('location'))), 'Microsoft.Resources/deployments', 'web-app-deployment'), '2025-04-01').outputs.url.value]"
+    },
+    "APPLICATION_INSIGHTS_CONNECTION_STRING": {
+      "type": "string",
+      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('rg-zavastorefront-{0}-{1}', parameters('environmentName'), parameters('location'))), 'Microsoft.Resources/deployments', 'monitoring-deployment'), '2025-04-01').outputs.applicationInsightsConnectionString.value]"
+    },
+    "AI_FOUNDRY_ENDPOINT": {
+      "type": "string",
+      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('rg-zavastorefront-{0}-{1}', parameters('environmentName'), parameters('location'))), 'Microsoft.Resources/deployments', 'ai-foundry-deployment'), '2025-04-01').outputs.endpoint.value]"
+    },
+    "AI_FOUNDRY_PROJECT_ID": {
+      "type": "string",
+      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('rg-zavastorefront-{0}-{1}', parameters('environmentName'), parameters('location'))), 'Microsoft.Resources/deployments', 'ai-foundry-deployment'), '2025-04-01').outputs.projectId.value]"
+    },
+    "MANAGED_IDENTITY_CLIENT_ID": {
+      "type": "string",
+      "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, format('rg-zavastorefront-{0}-{1}', parameters('environmentName'), parameters('location'))), 'Microsoft.Resources/deployments', 'managed-identity-deployment'), '2025-04-01').outputs.clientId.value]"
+    }
+  }
+}

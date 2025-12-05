@@ -1,0 +1,50 @@
+name: Build and Deploy to Azure App Service
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  REGISTRY_URL: ${{ secrets.AZURE_REGISTRY_URL }}
+  REGISTRY_NAME: ${{ secrets.AZURE_REGISTRY_NAME }}
+  IMAGE_NAME: zavastorefront
+  APP_NAME: ${{ secrets.AZURE_APP_SERVICE_NAME }}
+  RESOURCE_GROUP: ${{ secrets.AZURE_RESOURCE_GROUP }}
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Azure Login (Federated)
+        uses: azure/login@v1
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Build and push Docker image
+        run: |
+          az acr build \
+            --registry ${{ env.REGISTRY_NAME }} \
+            --image ${{ env.IMAGE_NAME }}:${{ github.sha }} \
+            --image ${{ env.IMAGE_NAME }}:latest \
+            --image ${{ env.IMAGE_NAME }}:${{ github.ref_name }} \
+            --file src/Dockerfile \
+            src/
+
+      - name: Deploy to App Service
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ env.APP_NAME }}
+          images: ${{ env.REGISTRY_URL }}/${{ env.IMAGE_NAME }}:${{ github.sha }}

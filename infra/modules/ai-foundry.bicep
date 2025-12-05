@@ -10,6 +10,9 @@ param location string
 @description('Principal ID of the managed identity for RBAC role assignment')
 param managedIdentityPrincipalId string
 
+@description('Log Analytics Workspace ID for diagnostic settings')
+param logAnalyticsWorkspaceId string
+
 @description('Tags to apply to the resource')
 param tags object = {}
 
@@ -105,14 +108,16 @@ resource aiFoundryProject 'Microsoft.MachineLearningServices/workspaces@2024-04-
   }
 }
 
-// AI Services connection to AI Foundry (Identity-Only)
+// AI Services connection to AI Foundry
+// Note: Connection is created for Hub workspace visibility
+// Actual authentication uses managed identity via RBAC role assignment
 resource aiServicesConnection 'Microsoft.MachineLearningServices/workspaces/connections@2024-04-01' = {
   name: 'aiservices-connection'
   parent: aiFoundryHub
   properties: {
     category: 'AIServices'
     target: aiServices.properties.endpoint
-    authType: 'ManagedIdentity'
+    authType: 'AAD'
     isSharedToAll: true
     metadata: {
       ApiType: 'Azure'
@@ -132,6 +137,43 @@ resource cognitiveServicesRoleAssignment 'Microsoft.Authorization/roleAssignment
     principalType: 'ServicePrincipal'
   }
 }
+
+// Diagnostic Settings for AI Services (Cognitive Services)
+// Sends all diagnostic logs and metrics to Log Analytics Workspace
+resource aiServicesDiagnosticSettings 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = {
+  name: 'diag-${aiServices.name}'
+  scope: aiServices
+  properties: {
+    workspaceId: logAnalyticsWorkspaceId
+    logs: [
+      {
+        categoryGroup: 'allLogs'
+        enabled: true
+        retentionPolicy: {
+          enabled: false
+          days: 0
+        }
+      }
+    ]
+    metrics: [
+      {
+        category: 'AllMetrics'
+        enabled: true
+        retentionPolicy: {
+          enabled: false
+          days: 0
+        }
+      }
+    ]
+  }
+}
+
+// Note: AI Foundry Hub workspace diagnostic settings are limited
+// Most detailed diagnostics are captured at the AI Services (Cognitive Services) level
+// Hub-level metrics are available but detailed event logs require Azure AI Services level diagnostics
+
+// Note: AI Foundry Project workspace diagnostic settings are limited
+// Most detailed diagnostics are captured at the AI Services (Cognitive Services) level
 
 output id string = aiFoundryHub.id
 output name string = aiFoundryHub.name

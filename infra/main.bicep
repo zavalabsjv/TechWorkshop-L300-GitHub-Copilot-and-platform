@@ -71,6 +71,7 @@ module aiFoundry 'modules/ai-foundry.bicep' = {
     name: 'aif-zavastorefront-${environmentName}-${location}'
     location: location
     managedIdentityPrincipalId: managedIdentity.outputs.principalId
+    logAnalyticsWorkspaceId: monitoring.outputs.logAnalyticsWorkspaceId
     tags: tags
   }
 }

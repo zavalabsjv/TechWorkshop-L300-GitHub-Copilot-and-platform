@@ -14,10 +14,14 @@ builder.Services.AddSession(options =>
     options.Cookie.IsEssential = true;
 });
 
+// Add HTTP client factory for external API calls
+builder.Services.AddHttpClient();
+
 // Register application services
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddSingleton<ProductService>();
 builder.Services.AddScoped<CartService>();
+builder.Services.AddScoped<ChatService>();
 
 var app = builder.Build();
 

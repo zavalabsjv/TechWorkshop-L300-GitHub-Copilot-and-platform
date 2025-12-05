@@ -32,13 +32,20 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
+      - name: Set Docker tag
+        id: docker-tag
+        run: |
+          # Sanitize branch name for Docker tag (replace / with -)
+          TAG=$(echo "${{ github.ref_name }}" | sed 's/\//-/g')
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+
       - name: Build and push Docker image
         run: |
           az acr build \
             --registry ${{ env.REGISTRY_NAME }} \
             --image ${{ env.IMAGE_NAME }}:${{ github.sha }} \
             --image ${{ env.IMAGE_NAME }}:latest \
-            --image ${{ env.IMAGE_NAME }}:${{ github.ref_name }} \
+            --image ${{ env.IMAGE_NAME }}:${{ steps.docker-tag.outputs.tag }} \
             --file ./src/Dockerfile \
             --platform linux \
             .

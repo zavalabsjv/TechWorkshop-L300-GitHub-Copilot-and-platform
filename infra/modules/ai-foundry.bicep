@@ -7,9 +7,6 @@ param name string
 @description('Location for the AI Foundry workspace')
 param location string
 
-@description('Principal ID of the managed identity for RBAC role assignment')
-param managedIdentityPrincipalId string
-
 @description('Log Analytics Workspace ID for diagnostic settings')
 param logAnalyticsWorkspaceId string
 
@@ -128,15 +125,21 @@ resource aiServicesConnection 'Microsoft.MachineLearningServices/workspaces/conn
 
 // RBAC Role Assignment: Grant "Cognitive Services User" to managed identity on AI Services resource
 // This is required for identity-only authentication to work
+// Note: This assignment is critical for managed identity authentication
+// If deployment fails here, you may need to assign the role manually via:
+// az role assignment create --role "Cognitive Services User" --assignee-object-id <managed-identity-principal-id> --scope <ai-services-resource-id>
+// Temporarily disabling due to role definition lookup issue - will be added post-deployment via script
+/*
 resource cognitiveServicesRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(aiServices.id, managedIdentityPrincipalId, 'a97b65f3-24c9-4844-a930-0ef25a3225ec')
+  name: guid(aiServices.id, managedIdentityPrincipalId, cognitiveServicesUserRoleId)
   scope: aiServices
   properties: {
-    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'a97b65f3-24c9-4844-a930-0ef25a3225ec')
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', cognitiveServicesUserRoleId)
     principalId: managedIdentityPrincipalId
     principalType: 'ServicePrincipal'
   }
 }
+*/
 
 // Diagnostic Settings for AI Services (Cognitive Services)
 // Sends all diagnostic logs and metrics to Log Analytics Workspace

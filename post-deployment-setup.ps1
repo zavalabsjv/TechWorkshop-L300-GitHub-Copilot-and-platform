@@ -13,14 +13,22 @@ Write-Host "🔧 Post-Deployment Setup for AI Foundry" -ForegroundColor Cyan
 # Get the managed identity
 Write-Host "`n1️⃣  Finding managed identity..." -ForegroundColor Blue
 $identityName = "id-zavastorefront-${EnvironmentName}-${Location}"
-$identity = az identity show --name $identityName --resource-group $ResourceGroup | ConvertFrom-Json
+$identityJson = az identity show --name $identityName --resource-group $ResourceGroup
+$identity = $identityJson | ConvertFrom-Json
 
 if (-not $identity) {
     Write-Host "❌ ERROR: Could not find managed identity: $identityName" -ForegroundColor Red
     exit 1
 }
 
-$principalId = $identity.properties.principalId
+# Extract principal ID from response
+$principalId = if ($identity.principalId) { $identity.principalId } else { $identity.properties.principalId }
+
+if (-not $principalId) {
+    Write-Host "❌ ERROR: Could not retrieve principal ID from managed identity" -ForegroundColor Red
+    Write-Host "   Response: $identityJson" -ForegroundColor Red
+    exit 1
+}
 Write-Host "✓ Found managed identity: $identityName" -ForegroundColor Green
 Write-Host "  Principal ID: $principalId"
 

@@ -7,9 +7,9 @@ EXPOSE 443
 
 FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
 WORKDIR /src
-COPY ["src/ZavaStorefront.csproj", "./"]
+COPY ["ZavaStorefront.csproj", "./"]
 RUN dotnet restore "ZavaStorefront.csproj"
-COPY src/ .
+COPY . .
 RUN dotnet build "ZavaStorefront.csproj" -c Release -o /app/build
 
 FROM build AS publish

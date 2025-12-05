@@ -11,7 +11,7 @@ services:
     host: containerapp
     docker:
       path: ./Dockerfile
-      context: ./src
+      context: .
 
 hooks:
   postprovision:

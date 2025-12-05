@@ -95,6 +95,7 @@ module webApp 'modules/web-app.bicep' = {
     location: location
     appServicePlanId: appServicePlan.outputs.id
     managedIdentityId: managedIdentity.outputs.id
+    managedIdentityClientId: managedIdentity.outputs.clientId
     containerRegistryLoginServer: containerRegistry.outputs.loginServer
     applicationInsightsConnectionString: monitoring.outputs.applicationInsightsConnectionString
     applicationInsightsInstrumentationKey: monitoring.outputs.applicationInsightsInstrumentationKey

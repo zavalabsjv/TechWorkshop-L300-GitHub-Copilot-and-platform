@@ -12,6 +12,9 @@ param appServicePlanId string
 @description('Managed Identity resource ID')
 param managedIdentityId string
 
+@description('Managed Identity client ID (required for DefaultAzureCredential in containers with only user-assigned identity)')
+param managedIdentityClientId string
+
 @description('Container Registry login server')
 param containerRegistryLoginServer string
 
@@ -98,6 +101,10 @@ resource webApp 'Microsoft.Web/sites@2023-01-01' = {
         {
           name: 'ASPNETCORE_ENVIRONMENT'
           value: 'Development'
+        }
+        {
+          name: 'AZURE_CLIENT_ID'
+          value: managedIdentityClientId
         }
       ]
     }

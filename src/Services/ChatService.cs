@@ -38,11 +38,11 @@ namespace ZavaStorefront.Services
                     return "Configuration error: Missing Foundry endpoint.";
                 }
 
-                // Validate endpoint has proper path
-                if (!endpoint.Contains("/models/chat/completions"))
+                // Validate endpoint has proper path (either AI Foundry or Azure OpenAI format)
+                if (!endpoint.Contains("/chat/completions"))
                 {
-                    _logger.LogError("Invalid endpoint format: missing /models/chat/completions path. Endpoint: {Endpoint}", endpoint);
-                    return "Configuration error: Endpoint must include /models/chat/completions path.";
+                    _logger.LogError("Invalid endpoint format: missing /chat/completions path. Endpoint: {Endpoint}", endpoint);
+                    return "Configuration error: Endpoint must include /chat/completions path.";
                 }
 
                 // Extract the base endpoint (without query string) for token request

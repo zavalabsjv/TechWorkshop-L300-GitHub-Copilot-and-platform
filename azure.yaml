@@ -10,8 +10,8 @@ services:
     language: dotnet
     host: containerapp
     docker:
-      path: ./Dockerfile
-      context: .
+      path: ./src/Dockerfile
+      context: ./src
 
 hooks:
   postprovision:

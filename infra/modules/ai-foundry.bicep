@@ -1,10 +1,14 @@
 // AI Foundry (Azure AI Studio) workspace
+// This module enforces identity-only authentication with no API keys
 
 @description('Name of the AI Foundry workspace')
 param name string
 
 @description('Location for the AI Foundry workspace')
 param location string
+
+@description('Principal ID of the managed identity for RBAC role assignment')
+param managedIdentityPrincipalId string
 
 @description('Tags to apply to the resource')
 param tags object = {}
@@ -101,22 +105,31 @@ resource aiFoundryProject 'Microsoft.MachineLearningServices/workspaces@2024-04-
   }
 }
 
-// AI Services connection to AI Foundry
+// AI Services connection to AI Foundry (Identity-Only)
 resource aiServicesConnection 'Microsoft.MachineLearningServices/workspaces/connections@2024-04-01' = {
   name: 'aiservices-connection'
   parent: aiFoundryHub
   properties: {
     category: 'AIServices'
     target: aiServices.properties.endpoint
-    authType: 'ApiKey'
+    authType: 'ManagedIdentity'
     isSharedToAll: true
-    credentials: {
-      key: aiServices.listKeys().key1
-    }
     metadata: {
       ApiType: 'Azure'
       ResourceId: aiServices.id
     }
+  }
+}
+
+// RBAC Role Assignment: Grant "Cognitive Services User" to managed identity on AI Services resource
+// This is required for identity-only authentication to work
+resource cognitiveServicesRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(aiServices.id, managedIdentityPrincipalId, 'a97b65f3-24c9-4844-a930-0ef25a3225ec')
+  scope: aiServices
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'a97b65f3-24c9-4844-a930-0ef25a3225ec')
+    principalId: managedIdentityPrincipalId
+    principalType: 'ServicePrincipal'
   }
 }
 

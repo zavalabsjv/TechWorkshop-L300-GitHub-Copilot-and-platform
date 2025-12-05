@@ -1,6 +1,7 @@
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
+using Azure.Identity;
 
 namespace ZavaStorefront.Services
 {
@@ -9,12 +10,19 @@ namespace ZavaStorefront.Services
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly IConfiguration _configuration;
         private readonly ILogger<ChatService> _logger;
+        private readonly DefaultAzureCredential _credential;
 
         public ChatService(IHttpClientFactory httpClientFactory, IConfiguration configuration, ILogger<ChatService> logger)
         {
             _httpClientFactory = httpClientFactory;
             _configuration = configuration;
             _logger = logger;
+            // DefaultAzureCredential will use managed identity when running on Azure
+            // For local development, it will fall back to other authentication methods
+            _credential = new DefaultAzureCredential(new DefaultAzureCredentialOptions
+            {
+                ExcludeSharedTokenCacheCredential = true
+            });
         }
 
         public async Task<string> SendMessageToPhiAsync(string userMessage, string? systemPrompt = null)
@@ -22,15 +30,12 @@ namespace ZavaStorefront.Services
             try
             {
                 var endpoint = _configuration["AI_FOUNDRY_ENDPOINT"];
-                var apiKey = _configuration["AI_FOUNDRY_API_KEY"];
                 var modelName = _configuration["AI_MODEL_NAME"] ?? "Phi4";
 
-                if (string.IsNullOrEmpty(endpoint) || string.IsNullOrEmpty(apiKey))
+                if (string.IsNullOrEmpty(endpoint))
                 {
-                    _logger.LogError("Missing Foundry configuration: Endpoint={HasEndpoint}, ApiKey={HasApiKey}", 
-                        !string.IsNullOrEmpty(endpoint), 
-                        !string.IsNullOrEmpty(apiKey));
-                    return "Configuration error: Missing Foundry endpoint or API key.";
+                    _logger.LogError("Missing Foundry configuration: Endpoint is required");
+                    return "Configuration error: Missing Foundry endpoint.";
                 }
 
                 // Validate endpoint has proper path
@@ -40,8 +45,14 @@ namespace ZavaStorefront.Services
                     return "Configuration error: Endpoint must include /models/chat/completions path.";
                 }
 
+                // Extract the base endpoint (without query string) for token request
+                var aiServicesResource = "https://cognitiveservices.azure.com";
+
+                // Get access token using managed identity
+                var accessToken = await _credential.GetTokenAsync(
+                    new Azure.Core.TokenRequestContext(new[] { aiServicesResource + "/.default" }));
+
                 var client = _httpClientFactory.CreateClient();
-                var fullUrl = endpoint;
                 
                 // Build messages list with optional system prompt
                 var messages = new List<object>();
@@ -65,12 +76,12 @@ namespace ZavaStorefront.Services
                     Encoding.UTF8,
                     "application/json");
 
-                // Add authorization header with API key
-                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
+                // Add authorization header with access token from managed identity
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken.Token);
 
-                _logger.LogInformation("Sending message to Phi4 endpoint");
+                _logger.LogInformation("Sending message to Phi4 endpoint using managed identity authentication");
 
-                var response = await client.PostAsync(fullUrl, jsonContent);
+                var response = await client.PostAsync(endpoint, jsonContent);
                 
                 if (!response.IsSuccessStatusCode)
                 {
@@ -98,6 +109,11 @@ namespace ZavaStorefront.Services
 
                 _logger.LogInformation("Received response from Phi4");
                 return firstChoice ?? "No response from Phi4";
+            }
+            catch (Azure.Identity.AuthenticationFailedException ex)
+            {
+                _logger.LogError(ex, "Failed to authenticate with Azure Identity (managed identity or fallback credentials)");
+                return $"Authentication error: {ex.Message}. Ensure managed identity is properly configured.";
             }
             catch (HttpRequestException ex)
             {

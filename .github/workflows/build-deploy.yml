@@ -39,7 +39,8 @@ jobs:
             --image ${{ env.IMAGE_NAME }}:${{ github.sha }} \
             --image ${{ env.IMAGE_NAME }}:latest \
             --image ${{ env.IMAGE_NAME }}:${{ github.ref_name }} \
-            --file src/Dockerfile \
+            --file Dockerfile \
+            --platform linux \
             src/
 
       - name: Deploy to App Service

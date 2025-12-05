@@ -48,11 +48,33 @@ namespace ZavaStorefront.Services
                 // Extract the base endpoint (without query string) for token request
                 var aiServicesResource = "https://cognitiveservices.azure.com";
 
-                // Get access token using managed identity
-                var accessToken = await _credential.GetTokenAsync(
-                    new Azure.Core.TokenRequestContext(new[] { aiServicesResource + "/.default" }));
-
                 var client = _httpClientFactory.CreateClient();
+                
+                // Try to use managed identity first (identity-only authentication)
+                try
+                {
+                    _logger.LogInformation("Attempting to use managed identity authentication");
+                    var accessToken = await _credential.GetTokenAsync(
+                        new Azure.Core.TokenRequestContext(new[] { aiServicesResource + "/.default" }));
+
+                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken.Token);
+                    _logger.LogInformation("Successfully acquired token using managed identity");
+                }
+                catch (Azure.Identity.AuthenticationFailedException ex)
+                {
+                    // Fallback to API key if managed identity fails
+                    var apiKey = _configuration["AI_FOUNDRY_API_KEY"];
+                    if (!string.IsNullOrEmpty(apiKey))
+                    {
+                        _logger.LogWarning(ex, "Managed identity authentication failed, falling back to API key authentication");
+                        client.DefaultRequestHeaders.Add("api-key", apiKey);
+                    }
+                    else
+                    {
+                        _logger.LogError(ex, "Managed identity authentication failed and no API key available for fallback");
+                        return $"Authentication error: {ex.Message}. Neither managed identity nor API key is configured.";
+                    }
+                }
                 
                 // Build messages list with optional system prompt
                 var messages = new List<object>();
@@ -76,10 +98,7 @@ namespace ZavaStorefront.Services
                     Encoding.UTF8,
                     "application/json");
 
-                // Add authorization header with access token from managed identity
-                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken.Token);
-
-                _logger.LogInformation("Sending message to Phi4 endpoint using managed identity authentication");
+                _logger.LogInformation("Sending message to Phi4 endpoint");
 
                 var response = await client.PostAsync(endpoint, jsonContent);
                 
@@ -113,7 +132,7 @@ namespace ZavaStorefront.Services
             catch (Azure.Identity.AuthenticationFailedException ex)
             {
                 _logger.LogError(ex, "Failed to authenticate with Azure Identity (managed identity or fallback credentials)");
-                return $"Authentication error: {ex.Message}. Ensure managed identity is properly configured.";
+                return $"Authentication error: {ex.Message}. Ensure managed identity is properly configured or API key is set.";
             }
             catch (HttpRequestException ex)
             {

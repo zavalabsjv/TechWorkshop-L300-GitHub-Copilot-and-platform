@@ -2,6 +2,8 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using Azure.Identity;
+using Azure.AI.ContentSafety;
+using Azure;
 
 namespace ZavaStorefront.Services
 {
@@ -23,6 +25,43 @@ namespace ZavaStorefront.Services
             {
                 ExcludeSharedTokenCacheCredential = true
             });
+        }
+
+        private async Task<(bool isSafe, string message)> CheckContentSafetyAsync(string userMessage)
+        {
+            try
+            {
+                var safetyEndpoint = _configuration["AI_CONTENT_SAFETY_ENDPOINT"];
+                var safetyApiKey = _configuration["AI_CONTENT_SAFETY_API_KEY"];
+
+                if (string.IsNullOrEmpty(safetyEndpoint) || string.IsNullOrEmpty(safetyApiKey))
+                {
+                    _logger.LogWarning("Content Safety not configured, skipping check");
+                    return (true, "");
+                }
+
+                var client = new ContentSafetyClient(new Uri(safetyEndpoint), new AzureKeyCredential(safetyApiKey));
+                var request = new AnalyzeTextOptions(userMessage);
+
+                var response = await client.AnalyzeTextAsync(request);
+
+                _logger.LogInformation("Content Safety Analysis completed");
+
+                var unsafeCategories = response.Value.CategoriesAnalysis.Where(x => x.Severity >= 2).ToList();
+
+                if (unsafeCategories.Any())
+                {
+                    _logger.LogWarning("Content flagged as unsafe. Categories: {Categories}", string.Join(", ", unsafeCategories.Select(x => x.Category)));
+                    return (false, "I appreciate your message, but I'm unable to process it due to content policy restrictions. Please rephrase your question and try again.");
+                }
+
+                return (true, "");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error checking content safety");
+                return (true, "");
+            }
         }
 
         public async Task<string> SendMessageToPhiAsync(string userMessage, string? systemPrompt = null)
@@ -74,6 +113,13 @@ namespace ZavaStorefront.Services
                         _logger.LogError(ex, "Managed identity authentication failed and no API key available for fallback");
                         return $"Authentication error: {ex.Message}. Neither managed identity nor API key is configured.";
                     }
+                }
+                
+                // Check content safety before processing
+                var (isSafe, unsafeMessage) = await CheckContentSafetyAsync(userMessage);
+                if (!isSafe)
+                {
+                    return unsafeMessage;
                 }
                 
                 // Build messages list with optional system prompt
